@@ -1,0 +1,11 @@
+{
+  "name": "graphsplaining-service",
+  "version": "1.0.0",
+  "description": "Automatically runs EXPLAIN on neo4j queries",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
