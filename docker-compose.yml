@@ -1,0 +1,37 @@
+version: '3.7'
+services:
+  neo4j_graphsplainer:
+    restart: on-failure
+    image: neo4j:3.5.9
+    # use non-standard ports for neo4j to prevent port conflicts
+    ports:
+      - "17474:17474"
+      - "17687:17687"
+    volumes:
+      - explain_data:/var/lib/neo4j/data
+    environment:
+      # set initial password for dev environment - update for production
+      - NEO4J_AUTH=neo4j/explain
+      - NEO4J_dbms_connector_bolt_listen__address=:17687
+      - NEO4J_dbms_connector_http_listen__address=:17474
+      - NEO4J_dbms_logs_query_enabled=true
+  neo4j_test:
+    restart: on-failure
+    image: neo4j:3.5.9
+    # use non-standard ports for neo4j to prevent port conflicts
+    ports:
+      - "27474:27474"
+      - "27687:27687"
+    volumes:
+      - test_data:/var/lib/neo4j/data
+    environment:
+      # set initial password for dev environment - update for production
+      - NEO4J_AUTH=neo4j/explain
+      - NEO4J_dbms_connector_bolt_listen__address=:27687
+      - NEO4J_dbms_connector_http_listen__address=:27474
+      - NEO4J_dbms_logs_query_enabled=true
+      - NEO4J_dbms_logs_query_threshold=0
+volumes:
+  # docker-compose will create these on start and they persist to keep graph data
+  test_data:
+  explain_data:
