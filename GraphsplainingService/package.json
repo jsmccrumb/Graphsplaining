@@ -4,8 +4,18 @@
   "description": "Automatically runs EXPLAIN on neo4j queries",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --verbose .",
+    "pretest": "eslint --ignore-path .gitignore ."
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "neo4j-driver": "^1.7.6"
+  },
+  "devDependencies": {
+    "eslint": "^6.3.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-jest": "^22.17.0",
+    "jest": "^24.9.0"
+  }
 }

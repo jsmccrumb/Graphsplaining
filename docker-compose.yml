@@ -36,6 +36,16 @@ services:
     build:
       context: ./GraphsplainingService
       dockerfile: dev.Dockerfile
+    volumes:
+      - ./GraphsplainingService:/usr/src/app
+  graphsplaining_service_test:
+    restart: on-failure
+    build:
+      context: ./GraphsplainingService
+      dockerfile: dev.Dockerfile
+    command: "npm test -- --watch"
+    volumes:
+      - ./GraphsplainingService:/usr/src/app
 volumes:
   # docker-compose will create these on start and they persist to keep graph data
   test_data:
