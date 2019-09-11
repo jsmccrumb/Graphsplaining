@@ -2,6 +2,7 @@
   "parserOptions": {
     "ecmaVersion": 2018
   },
+  "plugins": ["jest"],
 
-  "extends": "google"
+  "extends": ["plugin:jest/recommended", "google"]
 }
