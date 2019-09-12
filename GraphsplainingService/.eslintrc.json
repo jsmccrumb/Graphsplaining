@@ -1,8 +1,12 @@
 {
   "parserOptions": {
-    "ecmaVersion": 2018
+    "ecmaVersion": 2019
   },
   "plugins": ["jest"],
 
-  "extends": ["plugin:jest/recommended", "google"]
+  "extends": ["plugin:jest/recommended", "google"],
+  "rules": {
+    "valid-jsdoc": "warn",
+    "arrow-parens": "off"
+  }
 }
