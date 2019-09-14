@@ -1,5 +1,6 @@
 version: '3.7'
 services:
+  # this is the graph that will save the explains
   neo4j_explain:
     restart: on-failure
     image: neo4j:3.5.9
@@ -15,6 +16,7 @@ services:
       - NEO4J_dbms_connector_bolt_listen__address=:17687
       - NEO4J_dbms_connector_http_listen__address=:17474
       - NEO4J_dbms_logs_query_enabled=true
+  # graph used for running explains against -- update environment variables on graphsplaining_service to use another
   neo4j_test:
     restart: on-failure
     image: neo4j:3.5.9
@@ -38,6 +40,15 @@ services:
       dockerfile: dev.Dockerfile
     volumes:
       - ./GraphsplainingService:/usr/src/app
+    environment:
+      # this is the graph that saves the explains
+      - NEO4J_EXPLAIN_BOLT=bolt://neo4j_explain:17687
+      - NEO4J_EXPLAIN_USER=neo4j
+      - NEO4J_EXPLAIN_PASS=explain
+      # this is the graph that is explained
+      - NEO4J_MAIN_BOLT=bolt://neo4j_test:27687
+      - NEO4J_MAIN_USER=neo4j
+      - NEO4J_MAIN_PASS=explain
   graphsplaining_service_test:
     restart: on-failure
     build:
@@ -46,6 +57,15 @@ services:
     command: "npm test -- --watch"
     volumes:
       - ./GraphsplainingService:/usr/src/app
+    environment:
+      # this is the graph that saves the explains
+      - NEO4J_EXPLAIN_BOLT=bolt://neo4j_explain:17687
+      - NEO4J_EXPLAIN_USER=neo4j
+      - NEO4J_EXPLAIN_PASS=explain
+      # this is the graph that is explained
+      - NEO4J_MAIN_BOLT=bolt://neo4j_test:27687
+      - NEO4J_MAIN_USER=neo4j
+      - NEO4J_MAIN_PASS=explain
 volumes:
   # docker-compose will create these on start and they persist to keep graph data
   test_data:
