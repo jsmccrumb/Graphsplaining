@@ -54,3 +54,28 @@ test('runExplainAsync returns explain plan for queries', async () => {
   });
 });
 
+test('getCypherForSaveExplain returns statement and params', async () => {
+  // include a parameter in the return so it will fail to run if not explain
+  const testQueries = [
+    `EXPLAIN PROFILE MATCH (n) RETURN n, $foo`,
+    `PROFILE MATCH (n) RETURN n, $foo`,
+    `// Some comment
+    PROFILE MATCH (n) RETURN n, $foo`,
+    `// Some Comment
+    profile profile match (n) return n, $foo`,
+    `MATCH (n) return n, $foo`,
+    `//Comment
+    MATCH (n) RETURN n, $foo`,
+    `// one last
+    PROFILE
+    PROfile MATCH (n) RETURN n, $foo`,
+  ];
+  await testQueries.forEach(async (q) => {
+    const result = await graphUtils.runExplainAsync(q);
+    const [statement, params] =
+        graphUtils.getCypherForSaveExplain(result, 'testId');
+    expect(Object.keys(params).every(k => statement.contains(`$${k}`)))
+        .toBeTruthy();
+    expect(statement.match(/plan\d/g).every(k => !!params[k])).toBeTruthy();
+  });
+});
