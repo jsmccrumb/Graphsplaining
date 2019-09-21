@@ -233,6 +233,24 @@ const getQueriesToExplainAsync = async () => {
   }
 };
 
+const initIndicesAsync = async () => {
+  const session = explainDriver.session();
+  try {
+    const createIndices = [
+      `CREATE CONSTRAINT ON (statement:Statement)
+      ASSERT statement.queryId IS UNIQUE`,
+      `CREATE INDEX ON :Explain(createdOn)`,
+    ];
+    for (let i = 0; i < createIndices.length; i++) {
+      await writeTransactionAsync(session, createIndices[i]);
+    }
+  } catch {
+    console.error('ERROR: Unable to init indices');
+  } finally {
+    session.close();
+  }
+};
+
 module.exports = {
   removeComments,
   queryId,
@@ -241,4 +259,5 @@ module.exports = {
   getCypherForSaveExplain,
   saveExplainAsync,
   getQueriesToExplainAsync,
+  initIndicesAsync,
 };

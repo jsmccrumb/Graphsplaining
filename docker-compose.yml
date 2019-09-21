@@ -38,6 +38,9 @@ services:
     build:
       context: ./GraphsplainingService
       dockerfile: dev.Dockerfile
+    depends_on:
+      - neo4j_test
+      - neo4j_explain
     volumes:
       - ./GraphsplainingService:/usr/src/app
     environment:
@@ -55,6 +58,9 @@ services:
       context: ./GraphsplainingService
       dockerfile: dev.Dockerfile
     command: "npm test -- --watch"
+    depends_on:
+      - neo4j_test
+      - neo4j_explain
     volumes:
       - ./GraphsplainingService:/usr/src/app
     environment:
