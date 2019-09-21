@@ -158,7 +158,9 @@ const getCypherForSaveExplain = ({summary}, queryId) => {
       recursivelyFormatChildren(initialAlias, summary.plan.children);
   const statement = `
     // match the statement node, create the explain node, link the children
-    MATCH (q:Statememt {queryId: $queryId})
+    MATCH (q:Statement {queryId: $queryId})
+    REMOVE q:ExplainMe
+    WITH q
     CREATE (e:Explain {
       statementType: $explain.statementType,
       serverAddress: $explain.serverAddress,
@@ -207,6 +209,7 @@ const getCypherForSaveExplain = ({summary}, queryId) => {
 const saveExplainAsync = async (result, queryId) => {
   const [statement, params] = getCypherForSaveExplain(result, queryId);
   const session = explainDriver.session();
+  console.log('save?', statement, params);
   try {
     return await writeTransactionAsync(session, statement, params);
   } catch {
@@ -216,6 +219,19 @@ const saveExplainAsync = async (result, queryId) => {
   }
 };
 
+const getQueriesToExplainAsync = async () => {
+  const cypher = `// get all :ExplainMe nodes
+    MATCH (n:ExplainMe)
+    RETURN n { .queryId, .text } AS query`;
+  const session = explainDriver.session();
+  try {
+    return await readTransactionAsync(session, cypher);
+  } catch {
+    console.error('Error getting queries to explain');
+  } finally {
+    session.close();
+  }
+};
 
 module.exports = {
   removeComments,
@@ -224,4 +240,5 @@ module.exports = {
   runExplainAsync,
   getCypherForSaveExplain,
   saveExplainAsync,
+  getQueriesToExplainAsync,
 };
