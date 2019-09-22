@@ -26,11 +26,13 @@ services:
       - "27687:27687"
     volumes:
       - test_data:/var/lib/neo4j/data
+      - test_logs:/var/lib/neo4j/logs
     environment:
       # set initial password for dev environment - update for production
       - NEO4J_AUTH=neo4j/explain
       - NEO4J_dbms_connector_bolt_listen__address=:27687
       - NEO4J_dbms_connector_http_listen__address=:27474
+      - NEO4J_dbms_logs_debug_level=DEBUG
       - NEO4J_dbms_logs_query_enabled=true
       - NEO4J_dbms_logs_query_threshold=0
   graphsplaining_service:
@@ -72,7 +74,25 @@ services:
       - NEO4J_MAIN_BOLT=bolt://neo4j_test:27687
       - NEO4J_MAIN_USER=neo4j
       - NEO4J_MAIN_PASS=explain
+  debug_scraper:
+    restart: on-failure
+    build:
+      context: ./GraphsplainingLogScraper
+      dockerfile: dev.Dockerfile
+    depends_on:
+      - neo4j_test
+      - neo4j_explain
+    volumes:
+      - ./GraphsplainingLogScraper:/usr/src/app
+      - test_logs:/neo4j_logs
+    environment:
+      # this is the graph that saves the explains
+      - NEO4J_EXPLAIN_BOLT=bolt://neo4j_explain:17687
+      - NEO4J_EXPLAIN_USER=neo4j
+      - NEO4J_EXPLAIN_PASS=explain
+      - LOG_TYPE=debug
 volumes:
   # docker-compose will create these on start and they persist to keep graph data
   test_data:
   explain_data:
+  test_logs:
