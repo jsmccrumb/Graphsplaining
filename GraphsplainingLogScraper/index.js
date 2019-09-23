@@ -26,7 +26,10 @@ const getLogTime = (line) => {
 };
 
 const handleCompletedStaleQuery = (query, logTime) => {
-  graphUtils.setQueryExplainMeAsync(query, logTime);
+  if (!queryLogAvailable()) {
+    graphUtils.setQueryExplainMeAsync(query, logTime);
+  }
+  graphUtils.setQueryStaleAsync(query, logTime);
 };
 
 const checkDebugLine = (line) => {

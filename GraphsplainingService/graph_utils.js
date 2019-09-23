@@ -131,7 +131,7 @@ const getCypherForSaveExplain = ({summary}, queryId) => {
     }, {[childAlias]: {
       operatorType: child.operatorType,
       identifiers: child.identifiers,
-      estimatedRows: child.arguments.EstimatedRows,
+      estimatedRows: neo4j.int(child.arguments.EstimatedRows),
     }});
     // reduce children statements into this one
     const statement = myChildren.reduce((acc, [statement, params]) => {
@@ -199,7 +199,7 @@ const getCypherForSaveExplain = ({summary}, queryId) => {
     [initialAlias]: {
       operatorType: summary.plan.operatorType,
       identifiers: summary.plan.identifiers,
-      estimatedRows: summary.plan.arguments.EstimatedRows,
+      estimatedRows: neo4j.int(summary.plan.arguments.EstimatedRows),
     },
     ...childrenParams,
   };
@@ -209,7 +209,6 @@ const getCypherForSaveExplain = ({summary}, queryId) => {
 const saveExplainAsync = async (result, queryId) => {
   const [statement, params] = getCypherForSaveExplain(result, queryId);
   const session = explainDriver.session();
-  console.log('save?', statement, params);
   try {
     return await writeTransactionAsync(session, statement, params);
   } catch {

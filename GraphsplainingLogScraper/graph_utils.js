@@ -80,21 +80,23 @@ const queryId = (query) => {
   return crypto.createHash('sha1').update(strippedQuery).digest('base64');
 };
 
+/**
+ * Merge :Statement on queryId, set :ExplainMe
+ */
 const setQueryExplainMeAsync = async (query, logTime) => {
   const id = queryId(query);
   const cypher = `// merge on queryId
-    MERGE (s:Statement {queryId: $queryId})
+    MERGE (s:Statement {queryId: $id})
       ON CREATE SET
         s.text = $query,
         s.createdOn = datetime()
-    SET s:ExplainMe,
-      s.lastLogTime = datetime($logTime)`;
+    SET s.lastLogTime = datetime($logTime),
+      s:ExplainMe`;
   const session = explainDriver.session();
   try {
     const result = await writeTransactionAsync(session,
         cypher,
-        {queryId: id, query, logTime});
-
+        {id, query, logTime});
   } catch {
     console.error('ERROR: unable to save :ExplainMe');
   } finally {
@@ -102,9 +104,60 @@ const setQueryExplainMeAsync = async (query, logTime) => {
   }
 };
 
+/**
+ * Add :Stale label to a query
+ */
+const setQueryStaleAsync = async (query, logTime) => {
+  const id = queryId(query);
+  const cypher = `// merge on queryId and set :Stale
+    MERGE (s:Statement {queryId: $id})
+      ON CREATE SET
+        s.text = $query,
+        s.createdOn = datetime()
+    SET s.lastLogTime = datetime($logTime),
+      s:Stale`;
+  const session = explainDriver.session();
+  try {
+    const result = await writeTransactionAsync(session,
+        cypher,
+        {id, query, logTime});
+  } catch {
+    console.error('ERROR: unable to save :Stale');
+  } finally {
+    session.close();
+  }
+};
+
+/**
+ * Merge :Statement on queryId, set :ExplainMe on create
+ * or if Statement is :Stale
+ */
+const setQueryExplainMeIfStaleAsync = async (query, logTime) => {
+  const id = queryId(query);
+  const cypher = `// merge on queryId
+    MERGE (s:Statement {queryId: $id})
+      ON CREATE SET
+        s.text = $query,
+        s.createdOn = datetime()
+    SET s.lastLogTime = datetime($logTime)
+    WITH s WHERE s:Stale
+    SET s:ExplainMe`;
+  const session = explainDriver.session();
+  try {
+    const result = await writeTransactionAsync(session,
+        cypher,
+        {id, query, logTime});
+  } catch {
+    console.error('ERROR: unable to save :ExplainMe');
+  } finally {
+    session.close();
+  }
+};
 module.exports = {
   removeComments,
   queryId,
   testConnectionsAsync,
   setQueryExplainMeAsync,
+  setQueryStaleAsync,
+  setQueryExplainMeIfStaleAsync,
 };
