@@ -12,5 +12,7 @@ Because of the depends_on in the docker-compose file, you can do `docker-compose
 ## Configuration
 Neo4j configuration options can be set either by providing a config file to the docker container or by setting environment variables on the container in the format: "NEO4J_{config}" where config is the property with periods replaced with underscores, and underscores replaced with two underscores. Such as: `NEO4J_dbms_connector_bolt_listen__address=:17687` to set `dbms.connector.bolt.listen_address`
 
+To explain against a local graph, if using docker on Windows or Mac, set `NEO4J_MAIN_BOLT=bolt://host.docker.internal:7687` in docker-compose.yml. _____ <-- also update the log volume to point to local log directory
+
 ## Dev work
 The docker-compose file includes a container for running the watch on the GraphsplainingService, use docker-compose logs -f graphsplaining_service_test to keep an eye on tests while working, if using the daemon mode (otherwise the logs will be visible in the midst of all the other logs in console in which you ran docker-compose up). On startup, the test container will run eslint against the folder, if there are linting errors it will not move on to the next test (useful for catching typos). If getting a linter error for a rule that should not apply, submit a pull request with the rule set to "off" in .eslintrc.json
