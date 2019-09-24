@@ -113,6 +113,28 @@ const runExplainAsync = async (query) => {
 const getCypherForSaveExplain = ({summary}, queryId) => {
   // integer to increment as new node added to query to create unique aliases
   let currentNode = 0;
+  const extractPlanArguments = (args) => {
+    const excludedKeys = [
+      'planner',
+      'version',
+      'runtime',
+      'runtime-impl',
+      'runtime-version',
+      'planner-impl',
+      'planner-version',
+    ];
+    return Object.entries(args)
+        .filter(([key, value]) => {
+          return (excludedKeys.indexOf(key) === -1);
+        }).reduce((acc, [key, value]) => {
+          const formattedKey = key.substring(0, 1).toLowerCase() +
+              key.substring(1);
+          acc[formattedKey] = value === parseInt(value) ?
+              neo4j.int(value) :
+              value;
+          return acc;
+        }, {});
+  };
   /**
    * Formats a plan (child of parentNode) along with any children of that plan
    * @param {String} parentNode alias of parentNode
@@ -131,17 +153,14 @@ const getCypherForSaveExplain = ({summary}, queryId) => {
     }, {[childAlias]: {
       operatorType: child.operatorType,
       identifiers: child.identifiers,
-      estimatedRows: neo4j.int(child.arguments.EstimatedRows),
+      ...extractPlanArguments(child.arguments),
     }});
     // reduce children statements into this one
     const statement = myChildren.reduce((acc, [statement, params]) => {
       return `${acc}
         ${statement}`;
-    }, `CREATE (${childAlias}:Plan {
-      operatorType: $${childAlias}.operatorType,
-      identifiers: $${childAlias}.identifiers,
-      estimatedRows: $${childAlias}.estimatedRows
-    })
+    }, `CREATE (${childAlias}:Plan)
+      SET ${childAlias} += $${childAlias}
     CREATE (${parentNode})-[:HAS_CHILD]->(${childAlias})`);
     return [statement, params];
   };
@@ -175,11 +194,8 @@ const getCypherForSaveExplain = ({summary}, queryId) => {
       plannerVersion: $explain.plannerVersion
     })
     CREATE (e)-[:EXPLAINS]->(q)
-    CREATE (${initialAlias}:Plan {
-      operatorType: $${initialAlias}.operatorType,
-      identifiers: $${initialAlias}.identifiers,
-      estimatedRows: $${initialAlias}.estimatedRows
-    })
+    CREATE (${initialAlias}:Plan)
+    SET ${initialAlias} += $${initialAlias}
     CREATE (${initialAlias})-[:ENDS]->(e)
     ${childrenStatement}`;
   const params = {
@@ -199,7 +215,7 @@ const getCypherForSaveExplain = ({summary}, queryId) => {
     [initialAlias]: {
       operatorType: summary.plan.operatorType,
       identifiers: summary.plan.identifiers,
-      estimatedRows: neo4j.int(summary.plan.arguments.EstimatedRows),
+      ...extractPlanArguments(summary.plan.arguments),
     },
     ...childrenParams,
   };
