@@ -44,9 +44,10 @@ Will explain :ExplainMe from ${process.env.NEO4J_EXPLAIN_BOLT}
 Against the graph at ${process.env.NEO4J_MAIN_BOLT}
 Enjoy!`);
 
-graphUtils.testConnectionsAsync().then(({main, explain}) => {
+graphUtils.testConnectionsAsync().then(async ({main, explain}) => {
   if (main && explain) {
-    graphUtils.initIndicesAsync();
+    await graphUtils.initIndicesAsync();
+    await graphUtils.initPerformanceChecksAsync();
     graphsplainingAsync();
   } else {
     console.error('Graph connections are not ready, check env and graphs');

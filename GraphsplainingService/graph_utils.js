@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const neo4j = require('neo4j-driver').v1;
+const checks = require('./performance_checks');
 
 const explainDriver = neo4j.driver(process.env.NEO4J_EXPLAIN_BOLT,
     neo4j.auth.basic(process.env.NEO4J_EXPLAIN_USER,
@@ -255,6 +256,8 @@ const initIndicesAsync = async () => {
       `CREATE CONSTRAINT ON (statement:Statement)
       ASSERT statement.queryId IS UNIQUE`,
       `CREATE INDEX ON :Explain(createdOn)`,
+      `CREATE CONSTRAINT ON (check:PerformanceCheck)
+      ASSERT check.name IS UNIQUE`,
     ];
     for (let i = 0; i < createIndices.length; i++) {
       await writeTransactionAsync(session, createIndices[i]);
@@ -266,6 +269,26 @@ const initIndicesAsync = async () => {
   }
 };
 
+const initPerformanceChecksAsync = async () => {
+  const session = explainDriver.session();
+  try {
+    const createChecks = `// unwind a list of checks and merge on name, setting properties on create
+      UNWIND $checks AS check
+      MERGE (n:PerformanceCheck {name: check.name})
+        ON CREATE SET
+          n.createdOn = datetime(),
+          n.severity = check.severity,
+          n.description = check.description,
+          n.violationCheck = check.violationCheck`;
+    await writeTransactionAsync(session, createChecks, {checks});
+  } catch {
+    console.error('ERROR: Unable to init :PerformanceChecks');
+  } finally {
+    session.close();
+  }
+};
+
+
 module.exports = {
   removeComments,
   queryId,
@@ -275,4 +298,5 @@ module.exports = {
   saveExplainAsync,
   getQueriesToExplainAsync,
   initIndicesAsync,
+  initPerformanceChecksAsync,
 };
