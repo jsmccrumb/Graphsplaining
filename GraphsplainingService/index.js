@@ -8,7 +8,7 @@ const runExplainsAsync = async (queries) => {
     try {
       const result = await graphUtils.runExplainAsync(query.text);
       await graphUtils.saveExplainAsync(result, query.queryId);
-    } catch {
+    } catch (e) {
       console.error(`ERROR: Could not explain and save ${query.queryId}`);
     }
   }
