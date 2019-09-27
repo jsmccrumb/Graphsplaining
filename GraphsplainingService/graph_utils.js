@@ -1,17 +1,17 @@
-const crypto = require("crypto");
-const neo4j = require("neo4j-driver").v1;
-const checks = require("./performance_checks");
+const crypto = require('crypto');
+const neo4j = require('neo4j-driver').v1;
+const checks = require('./performance_checks');
 
 const explainDriver = neo4j.driver(
-  process.env.NEO4J_EXPLAIN_BOLT,
-  neo4j.auth.basic(
-    process.env.NEO4J_EXPLAIN_USER,
-    process.env.NEO4J_EXPLAIN_PASS
-  )
+    process.env.NEO4J_EXPLAIN_BOLT,
+    neo4j.auth.basic(
+        process.env.NEO4J_EXPLAIN_USER,
+        process.env.NEO4J_EXPLAIN_PASS
+    )
 );
 const mainDriver = neo4j.driver(
-  process.env.NEO4J_MAIN_BOLT,
-  neo4j.auth.basic(process.env.NEO4J_MAIN_USER, process.env.NEO4J_MAIN_PASS)
+    process.env.NEO4J_MAIN_BOLT,
+    neo4j.auth.basic(process.env.NEO4J_MAIN_USER, process.env.NEO4J_MAIN_PASS)
 );
 
 /**
@@ -43,7 +43,7 @@ const writeTransactionAsync = async (session, query, params) => {
 const testConnectionAsync = async driver => {
   const session = driver.session();
   try {
-    const checkUser = "call dbms.showCurrentUser()";
+    const checkUser = 'call dbms.showCurrentUser()';
     const resp = await readTransactionAsync(session, checkUser);
     session.close();
     // it does not matter who user it,
@@ -65,7 +65,7 @@ const testConnectionAsync = async driver => {
 const testConnectionsAsync = async () => {
   const connections = {
     main: await testConnectionAsync(mainDriver),
-    explain: await testConnectionAsync(explainDriver)
+    explain: await testConnectionAsync(explainDriver),
   };
   return connections;
 };
@@ -74,7 +74,7 @@ const testConnectionsAsync = async () => {
  * Removes comments from a cypher query
  */
 const removeComments = query => {
-  return query.replace(/\/\/.+/g, "");
+  return query.replace(/\/\/.+/g, '');
 };
 
 /**
@@ -88,12 +88,12 @@ const removeComments = query => {
  */
 const queryId = query => {
   const strippedQuery = removeComments(query)
-    .replace(/\s/g, "")
-    .toLowerCase();
+      .replace(/\s/g, '')
+      .toLowerCase();
   return crypto
-    .createHash("sha1")
-    .update(strippedQuery)
-    .digest("base64");
+      .createHash('sha1')
+      .update(strippedQuery)
+      .digest('base64');
 };
 
 /**
@@ -108,7 +108,7 @@ const transformQueryToExplain = query => {
   // (\s*(explain|profile)) = 0+ whitespace characters then explain or profile
   // * = 0+ of that last group
   // i = case insensitive
-  query = query.replace(/^(\s*(explain|profile))*/i, "EXPLAIN ");
+  query = query.replace(/^(\s*(explain|profile))*/i, 'EXPLAIN ');
   return query;
 };
 
@@ -122,30 +122,30 @@ const runExplainAsync = async query => {
   return await readTransactionAsync(mainDriver.session(), query);
 };
 
-const getCypherForSaveExplain = ({ summary }, queryId) => {
+const getCypherForSaveExplain = ({summary}, queryId) => {
   // integer to increment as new node added to query to create unique aliases
   let currentNode = 0;
   const extractPlanArguments = args => {
     const excludedKeys = [
-      "planner",
-      "version",
-      "runtime",
-      "runtime-impl",
-      "runtime-version",
-      "planner-impl",
-      "planner-version"
+      'planner',
+      'version',
+      'runtime',
+      'runtime-impl',
+      'runtime-version',
+      'planner-impl',
+      'planner-version',
     ];
     return Object.entries(args)
-      .filter(([key, value]) => {
-        return excludedKeys.indexOf(key) === -1;
-      })
-      .reduce((acc, [key, value]) => {
-        const formattedKey =
+        .filter(([key, value]) => {
+          return excludedKeys.indexOf(key) === -1;
+        })
+        .reduce((acc, [key, value]) => {
+          const formattedKey =
           key.substring(0, 1).toLowerCase() + key.substring(1);
-        acc[formattedKey] =
+          acc[formattedKey] =
           value === parseInt(value) ? neo4j.int(value) : value;
-        return acc;
-      }, {});
+          return acc;
+        }, {});
   };
   /**
    * Formats a plan (child of parentNode) along with any children of that plan
@@ -162,24 +162,24 @@ const getCypherForSaveExplain = ({ summary }, queryId) => {
     );
     // reduce children params into this one
     const params = myChildren.reduce(
-      (acc, [statement, params]) => {
-        return { ...acc, ...params };
-      },
-      {
-        [childAlias]: {
-          operatorType: child.operatorType,
-          identifiers: child.identifiers,
-          ...extractPlanArguments(child.arguments)
+        (acc, [statement, params]) => {
+          return {...acc, ...params};
+        },
+        {
+          [childAlias]: {
+            operatorType: child.operatorType,
+            identifiers: child.identifiers,
+            ...extractPlanArguments(child.arguments),
+          },
         }
-      }
     );
     // reduce children statements into this one
     const statement = myChildren.reduce(
-      (acc, [statement, params]) => {
-        return `${acc}
+        (acc, [statement, params]) => {
+          return `${acc}
         ${statement}`;
-      },
-      `CREATE (${childAlias}:Plan)
+        },
+        `CREATE (${childAlias}:Plan)
       SET ${childAlias} += $${childAlias}
     CREATE (${parentNode})-[:HAS_CHILD]->(${childAlias})`
     );
@@ -188,22 +188,22 @@ const getCypherForSaveExplain = ({ summary }, queryId) => {
 
   const recursivelyFormatChildren = (parentNode, children = []) => {
     return children
-      .map(child => formatChild(parentNode, child))
-      .reduce(
-        (acc, [statement, params]) => {
-          return [
-            `${acc[0]}
+        .map(child => formatChild(parentNode, child))
+        .reduce(
+            (acc, [statement, params]) => {
+              return [
+                `${acc[0]}
             ${statement}`,
-            { ...acc[1], ...params }
-          ];
-        },
-        ["", {}]
-      );
+                {...acc[1], ...params},
+              ];
+            },
+            ['', {}]
+        );
   };
   const initialAlias = `plan${currentNode}`;
   const [childrenStatement, childrenParams] = recursivelyFormatChildren(
-    initialAlias,
-    summary.plan.children
+      initialAlias,
+      summary.plan.children
   );
   const statement = `
     // match the statement node, create the explain node, link the children
@@ -237,17 +237,17 @@ const getCypherForSaveExplain = ({ summary }, queryId) => {
       planner: summary.plan.arguments.planner,
       version: summary.plan.arguments.version,
       runtime: summary.plan.arguments.runtime,
-      runtimeImpl: summary.plan.arguments["runtime-impl"],
-      runtimeVersion: summary.plan.arguments["runtime-version"],
-      plannerImpl: summary.plan.arguments["planner-impl"],
-      plannerVersion: summary.plan.arguments["planner-version"]
+      runtimeImpl: summary.plan.arguments['runtime-impl'],
+      runtimeVersion: summary.plan.arguments['runtime-version'],
+      plannerImpl: summary.plan.arguments['planner-impl'],
+      plannerVersion: summary.plan.arguments['planner-version'],
     },
     [initialAlias]: {
       operatorType: summary.plan.operatorType,
       identifiers: summary.plan.identifiers,
-      ...extractPlanArguments(summary.plan.arguments)
+      ...extractPlanArguments(summary.plan.arguments),
     },
-    ...childrenParams
+    ...childrenParams,
   };
   return [statement, params];
 };
@@ -258,7 +258,7 @@ const saveExplainAsync = async (result, queryId) => {
   try {
     return await writeTransactionAsync(session, statement, params);
   } catch (e) {
-    console.error("error saving explain!", queryId);
+    console.error('error saving explain!', queryId);
   } finally {
     session.close();
   }
@@ -272,7 +272,7 @@ const getQueriesToExplainAsync = async () => {
   try {
     return await readTransactionAsync(session, cypher);
   } catch (e) {
-    console.error("Error getting queries to explain");
+    console.error('Error getting queries to explain');
   } finally {
     session.close();
   }
@@ -286,13 +286,13 @@ const initIndicesAsync = async () => {
       ASSERT statement.queryId IS UNIQUE`,
       `CREATE INDEX ON :Explain(createdOn)`,
       `CREATE CONSTRAINT ON (check:PerformanceCheck)
-      ASSERT check.name IS UNIQUE`
+      ASSERT check.name IS UNIQUE`,
     ];
     for (let i = 0; i < createIndices.length; i++) {
       await writeTransactionAsync(session, createIndices[i]);
     }
   } catch (e) {
-    console.error("ERROR: Unable to init indices");
+    console.error('ERROR: Unable to init indices');
   } finally {
     session.close();
   }
@@ -309,9 +309,9 @@ const initPerformanceChecksAsync = async () => {
           n.severity = check.severity,
           n.description = check.description,
           n.violationCheck = check.violationCheck`;
-    await writeTransactionAsync(session, createChecks, { checks });
+    await writeTransactionAsync(session, createChecks, {checks});
   } catch (e) {
-    console.error("ERROR: Unable to init :PerformanceChecks");
+    console.error('ERROR: Unable to init :PerformanceChecks');
   } finally {
     session.close();
   }
@@ -326,5 +326,5 @@ module.exports = {
   saveExplainAsync,
   getQueriesToExplainAsync,
   initIndicesAsync,
-  initPerformanceChecksAsync
+  initPerformanceChecksAsync,
 };
