@@ -210,7 +210,7 @@ const getCypherForSaveExplain = ({summary}, queryId) => {
     MATCH (q:Statement {queryId: $queryId})
     REMOVE q:ExplainMe
     WITH q
-    CREATE (e:Explain {
+    CREATE (e:Explain:CheckMe {
       statementType: $explain.statementType,
       serverAddress: $explain.serverAddress,
       serverVersion: $explain.serverVersion,
@@ -317,6 +317,78 @@ const initPerformanceChecksAsync = async () => {
   }
 };
 
+const getPerformanceChecksAsync = async () => {
+  const cypher = `// get all rules
+    MATCH (n:PerformanceCheck)
+    RETURN n { .* } AS check`;
+  const session = explainDriver.session();
+  try {
+    const result = await readTransactionAsync(session, cypher);
+    if (result == null || result.records == null) {
+      return [];
+    } else {
+      return result.records.map((record) => {
+        const props = record.get('check');
+        return {...props, severity: neo4j.int(props.severity)};
+      });
+    }
+  } catch (e) {
+    console.error('ERROR: Could get get performance checks');
+  } finally {
+    session.close();
+  }
+};
+
+const runPerformanceChecksAsync = async ({queryId, createdOn}) => {
+  const checks = await getPerformanceChecksAsync();
+  const cypherBegin = `// for checking a rule violation, first find the query and explain to check
+    MATCH (statement:Statement {queryId: $queryId})<-[:EXPLAINS]-(explain:Explain {createdOn: $createdOn})<-[:ENDS]-(lastPlan)`;
+  const cleanupCypher = `MATCH (statement:Statement {queryId: $queryId})<-[:EXPLAINS]-(explain {createdOn: $createdOn})
+    REMOVE explain:CheckMe`;
+  const session = explainDriver.session();
+  try {
+    for (let i = 0; i < checks.length; i++) {
+      const check = checks[i];
+      const cypher = `${cypherBegin}
+        ${check.violationCheck}`;
+      const params = {
+        queryId: queryId,
+        createdOn: createdOn,
+        checkName: check.name,
+      };
+      await writeTransactionAsync(session, cypher, params);
+    }
+    await writeTransactionAsync(session, cleanupCypher, {queryId, createdOn});
+  } catch (e) {
+    console.error('ERROR: unable to check performance on: ', queryId, createdOn, e);
+  } finally {
+    session.close();
+  }
+};
+
+const getExplainsToCheckAsync = async () => {
+  const cypher = `MATCH (s)<-[:EXPLAINS]-(e:CheckMe)
+    RETURN s.queryId AS queryId, e.createdOn AS createdOn`;
+  const session = explainDriver.session();
+  try {
+    const result = await readTransactionAsync(session, cypher);
+    if (result == null || result.records == null) {
+      return [];
+    } else {
+      return result.records.map((record) => {
+        return {
+          queryId: record.get('queryId'),
+          createdOn: record.get('createdOn'),
+        };
+      });
+    }
+  } catch (e) {
+    console.error('ERROR: unable to get explains to check');
+  } finally {
+    session.close();
+  }
+};
+
 module.exports = {
   removeComments,
   queryId,
@@ -327,4 +399,6 @@ module.exports = {
   getQueriesToExplainAsync,
   initIndicesAsync,
   initPerformanceChecksAsync,
+  getExplainsToCheckAsync,
+  runPerformanceChecksAsync,
 };

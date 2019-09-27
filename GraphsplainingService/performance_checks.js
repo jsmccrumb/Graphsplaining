@@ -7,7 +7,7 @@ const performanceChecks = [
       MATCH (lastPlan)-[:HAS_CHILD*]->(cp {operatorType: 'CartesianProduct'})
       OPTIONAL MATCH (cp)-[:HAS_CHILD*]->(uniq {operatorType: 'NodeUniqueIndexSeek'})
       WITH explain, cp, count(uniq) as uniqCount
-      MATCH (check:ViolationCheck {name: $ruleName})
+      MATCH (check:PerformanceCheck {name: $checkName})
       WITH explain, check, cp, check.severity - (uniqCount * 2) AS severity
       MERGE (explain)-[:VIOLATES {severity: severity}]->(check)
       MERGE (check)-[:AT_PLAN]->(cp)`,
@@ -31,7 +31,7 @@ const performanceChecks = [
       ] AS eagerPlans
       MATCH (lastPlan)-[:HAS_CHILD*]->(ep)
       WHERE ep.operatorType IN eagerPlans
-      MATCH (check:ViolationCheck {name: $ruleName})
+      MATCH (check:PerformanceCheck {name: $checkName})
       MERGE (explain)-[:VIOLATES {severity: check.severity}]->(check)
       MERGE (check)-[:AT_PLAN]->(ep)`,
   },

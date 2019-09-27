@@ -1,5 +1,6 @@
 const graphUtils = require('./graph_utils');
-let sleepTime = 60000;
+let explainSleep = 60000;
+let performanceCheckSleep = 60000;
 
 const runExplainsAsync = async (queries) => {
   console.log('run queries', queries.length);
@@ -29,14 +30,29 @@ const graphsplainingAsync = async () => {
   const queries = await getQueriesAsync();
   if (queries.length > 0) {
     console.log('Time for some Graphsplaining');
-    sleepTime = 100;
+    explainSleep = 100;
     await runExplainsAsync(queries);
   } else {
     console.log('No queries found');
-    sleepTime = 60000;
+    explainSleep = 60000;
   }
-  // recall graphingsplaining after sleepTime has passed
-  setTimeout(graphsplainingAsync, sleepTime);
+  // recall graphingsplaining after explainSleep has passed
+  setTimeout(graphsplainingAsync, explainSleep);
+};
+
+const performanceCheckingAsync = async () => {
+  const explains = await graphUtils.getExplainsToCheckAsync();
+  if (explains.length > 0) {
+    console.log('Time for some Performance Checking');
+    performanceCheckSleep = 100;
+    for (let i = 0; i < explains.length; i++) {
+      await graphUtils.runPerformanceChecksAsync(explains[i]);
+    }
+  } else {
+    performanceCheckSleep = 60000;
+  }
+  // recall performanceCheckingAsync after performanceCheckSleep has passed
+  setTimeout(performanceCheckingAsync, performanceCheckSleep);
 };
 
 console.log(`Starting Graphsplaing...
@@ -49,6 +65,7 @@ graphUtils.testConnectionsAsync().then(async ({main, explain}) => {
     await graphUtils.initIndicesAsync();
     await graphUtils.initPerformanceChecksAsync();
     graphsplainingAsync();
+    performanceCheckingAsync();
   } else {
     console.error('Graph connections are not ready, check env and graphs');
     process.exitCode = 1;
