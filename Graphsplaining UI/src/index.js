@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import ReactDOM from 'react-dom';
 import { makeStyles } from "@material-ui/core/styles";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
@@ -26,8 +27,6 @@ export default function ButtonAppBar() {
     if (headerRef) {
       setHeaderHeight(headerRef.current.offsetHeight);
     }
-    window.temp = headerRef.current;
-    console.log(headerRef.current);
   });
 
   return (
@@ -44,3 +43,5 @@ export default function ButtonAppBar() {
     </div>
   );
 }
+
+ReactDOM.render(<ButtonAppBar />, document.getElementById('root'));
