@@ -4,7 +4,6 @@ import { makeStyles } from "@material-ui/core/styles";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
-
 import SimpleTabs from "./Tabs.js";
 
 const useStyles = makeStyles(theme => ({
@@ -27,7 +26,7 @@ export default function ButtonAppBar() {
     if (headerRef) {
       setHeaderHeight(headerRef.current.offsetHeight);
     }
-  });
+  }, [headerRef.current]);
 
   return (
     <div className={classes.root}>
