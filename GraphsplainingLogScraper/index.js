@@ -1,5 +1,7 @@
 const fs = require('fs');
 const graphUtils = require('./graph_utils');
+const queryLogParser = require('./query_log_parser');
+
 let currentEntry = '';
 let isAdding = false;
 let logTime = '';
@@ -52,9 +54,24 @@ const checkDebugLine = (line) => {
   }
 };
 
+const checkQueryLine = (line) => {
+  if (isNewEntry(line)) {
+    if (isAdding) {
+      queryLogParser.parseQueryLog(currentEntry);
+    }
+    isAdding = true;
+    currentEntry = line;
+  } else if (isAdding) {
+    currentEntry = `${currentEntry}
+    ${line}`;
+  }
+};
+
 process.stdin.on('data', (lines) => {
   if (process.env.LOG_TYPE === 'debug') {
     lines.split(/\n/).forEach(checkDebugLine);
+  } else if (process.env.LOG_TYPE === 'query') {
+    lines.split(/\n/).forEach(checkQueryLine);
   }
 });
 
