@@ -26,11 +26,13 @@ const useStyles = makeStyles(theme => ({
 export default function MetricsGrid() {
   const classes = useStyles();
   const [queryCounts, setQueryCounts] = useState(null);
+  const [latestStats, setLatestStats] = useState(null);
   useEffect(() => {
     (async () => {
-      const results = await graphUtils.getQueryCountsAsync();
-      setQueryCounts(chartUtils.convertQueryCounts(results));
-      console.log(results);
+      const qcResults = await graphUtils.getQueryCountsAsync();
+      qcResults != null && setQueryCounts(chartUtils.convertQueryCounts(qcResults));
+      const lsResults = await graphUtils.getLatestStatsAsync();
+      lsResults != null && setLatestStats(chartUtils.convertLatestStats(lsResults));
     })();
   }, []);
 
@@ -38,39 +40,24 @@ export default function MetricsGrid() {
     <div className={classes.root}>
       <Grid container justify="center" spacing={3}>
         <Grid item xs={12} md={8} lg={6}>
-          {/* <Paper className={classes.paper}>xs=12</Paper> */}
           <Paper className={classes.paper}>
             {queryCounts == null ? <Loading message="Loading Query Count Info" /> : <LineChart options={queryCounts} />}
           </Paper>
         </Grid>
         <Grid item xs={12} md={8} lg={6}>
-          {/* <Paper className={classes.paper}>xs=12</Paper> */}
           <Paper className={classes.paper}>
             <HeatMap />
           </Paper>
         </Grid>
         <Grid item xs={6} md={4}>
-          {/* <Paper className={classes.paper}>xs=6</Paper> */}
           <Paper className={classes.paper}>
-            <DonutChart />
+            {latestStats == null ? <Loading message="Loading Latest Stats per Statement" /> : <DonutChart options={latestStats} />}
           </Paper>
         </Grid>
         <Grid item xs={12} md={8} lg={6}>
           <Paper className={classes.paper}>
             <StackedBarChart />
           </Paper>
-        </Grid>
-        <Grid item xs={3}>
-          <Paper className={classes.paper}>xs=3</Paper>
-        </Grid>
-        <Grid item xs={3}>
-          <Paper className={classes.paper}>xs=3</Paper>
-        </Grid>
-        <Grid item xs={3}>
-          <Paper className={classes.paper}>xs=3</Paper>
-        </Grid>
-        <Grid item xs={3}>
-          <Paper className={classes.paper}>xs=3</Paper>
         </Grid>
       </Grid>
     </div>

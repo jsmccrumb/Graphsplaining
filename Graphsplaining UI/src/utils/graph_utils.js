@@ -56,7 +56,28 @@ const getQueryCountsAsync = async () => {
   return await Promise.all(results);
 };
 
+const getLatestStatsAsync = async () => {
+  const cypher = `// get info about the latest explain per statement
+    MATCH (s:Statement)<-[:EXPLAINS]-(ex)
+    WITH s, ex ORDER BY ex.createdOn DESC
+    WITH s, head(collect(ex)) as latestExplain
+    WITH exists((latestExplain)-[:VIOLATES]->()) AS hasViolation,
+         exists((latestExplain)-[:COULD_INDEX]->()) AS hasIndex,
+         count(*) AS count
+    RETURN hasViolation, hasIndex, count`;
+  const session = driver.session();
+  try {
+    return await readTransactionAsync(session, cypher);
+  } catch (e) {
+    console.error('Error getting latest stats', e);
+    return Promise.resolve(null);
+  } finally {
+    session.close();
+  }
+};
+
 export default {
   getQueryCountsAsync,
+  getLatestStatsAsync,
   safeInteger,
 };

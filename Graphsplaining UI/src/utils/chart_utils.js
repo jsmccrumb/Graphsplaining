@@ -116,6 +116,42 @@ const convertQueryCounts = ([{records: queryLogRecords = []}, {records: explainR
   };
 };
 
+const baseDonutChartOptions = {
+  legend: {
+    show: true,
+    position: "bottom"
+  },
+  series: [44, 55, 41, 17, 15],
+  labels: ["A", "B", "C", "D", "E"]
+};
+
+const convertLatestStats = ({records = []}) => {
+  const getLabelFromRecord = (record) => {
+    const hasViolation = record.get('hasViolation');
+    const hasIndex = record.get('hasIndex');
+    if (hasViolation && hasIndex) {
+      return 'Violates Performance Check and Has Suggested Index';
+    } else if (!hasViolation && hasIndex) {
+      return 'Has Suggested Index';
+    } else if (hasViolation && !hasIndex) {
+      return 'Violates Performance Check';
+    } else if (!hasViolation && !hasIndex) {
+      return 'No Known Issues';
+    }
+  };
+  const stats = Object.entries(records.reduce((acc, record) => {
+    acc[getLabelFromRecord(record)] = graphUtils.safeInteger(record.get('count'));
+    return acc;
+  }, {}));
+
+  return {
+    ...baseDonutChartOptions,
+    series: stats.map(([label, data]) => data),
+    labels: stats.map(([label, data]) => label),
+  };
+}
+
 export default {
   convertQueryCounts,
+  convertLatestStats,
 };
