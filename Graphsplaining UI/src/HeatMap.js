@@ -109,7 +109,7 @@ class HeatMap extends React.Component {
 
     this.state = {
       options: {
-        plotOptions: {
+        /*plotOptions: {
           heatmap: {
             colorScale: {
               ranges: [
@@ -134,7 +134,12 @@ class HeatMap extends React.Component {
               ]
             }
           }
+        },*/
+        chart: {
+          height: 350,
+          type: 'heatmap',
         },
+        colors: ["#008FFB"],
         series: [
           {
             name: "Series 1",
@@ -188,7 +193,7 @@ class HeatMap extends React.Component {
       <div className="mixed-chart">
         <Chart
           options={this.state.options}
-          series={this.state.options.series}
+                 series={this.state.options.series}
           type="heatmap"
           // width="380"
         />
