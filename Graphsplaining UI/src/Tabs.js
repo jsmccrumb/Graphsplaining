@@ -62,7 +62,6 @@ export default function SimpleTabs(props) {
       props.headerHeight +
       (tabHeaderRef.current ? tabHeaderRef.current.offsetHeight : 0)
   };
-  console.log(props);
 
   return (
     <div className={classes.root}>

@@ -76,8 +76,38 @@ const getLatestStatsAsync = async () => {
   }
 };
 
+const getPerformanceChecksAsync = async () => {
+  const cypher = `// get all current performance checks
+    MATCH (n:PerformanceCheck)
+    RETURN n { .* } AS check`;
+  const session = driver.session();
+  try {
+    return await readTransactionAsync(session, cypher);
+  } catch (e) {
+    console.error('Error getting performance checks', e);
+  } finally {
+    session.close();
+  }
+};
+
+const violationCheckStart = 'MATCH (statement:Statement {queryId: $queryId})<-[:EXPLAINS]-(explain:Explain {createdOn: $createdOn})<-[:ENDS]-(lastPlan)';
+
+const violationCheckExplains = (violationCheck) => {
+  const cypher = `EXPLAIN ${violationCheckStart}
+  ${violationCheck}`;
+  const session = driver.session();
+  readTransactionAsync(session, cypher)
+    .then((resp) => {
+      return true;
+    }).catch((err) => {
+      return false;
+    }).finally(session.close);
+};
 export default {
   getQueryCountsAsync,
   getLatestStatsAsync,
+  getPerformanceChecksAsync,
   safeInteger,
+  violationCheckStart,
+  violationCheckExplains,
 };
