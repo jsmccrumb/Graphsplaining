@@ -52,7 +52,7 @@ export default function FilledTextFields() {
   });
   const violationCheckStart = graphUtils.violationCheckStart;
 
-  const checkError = (field) => {
+  const checkError = async (field) => {
     let currentError = '';
     const value = values[field];
     if (field === 'severity') {
@@ -80,8 +80,12 @@ export default function FilledTextFields() {
         if (!checkViolates.test(value)) {
           currentError = currentError + 'violationCheck must relate the check node to explain node with :VIOLATES; ';
         }
-        if (currentError = '' && !graphUtils.violationCheckExplains(value)) {
+        if (currentError === '' && !(await graphUtils.violationCheckExplains(value))) {
           currentError = currentError + 'violation check must be valid cypher; ';
+        }
+      } else if (field === 'name') {
+        if (currentError === '' && (await graphUtils.performanceCheckExists(value))) {
+          currentError = currentError + 'name must be unique, current name already exists';
         }
       }
     }
@@ -91,6 +95,23 @@ export default function FilledTextFields() {
 
   const handleChange = name => event => {
     setValues({ ...values, [name]: event.target.value });
+  };
+
+  const hasValidationError = () => {
+    return Object.values(errors).some(k => k !== '');
+  };
+
+  const handleSaveAsync = async () => {
+    await Promise.all(Object.keys(values).map(checkError));
+    if (!hasValidationError()) {
+      await graphUtils.savePerformanceCheck(values);
+      setValues({
+        name: '',
+        description: '',
+        severity: 1,
+        violationCheck: '',
+      });
+    }
   };
 
   return (
@@ -158,11 +179,8 @@ export default function FilledTextFields() {
           value={values.violationCheck}
         />
 
-        <Button variant="contained" className={classes.button}>
+        <Button variant="contained" color="primary" disabled={hasValidationError()} className={classes.button} onClick={handleSaveAsync}>
           Save
-        </Button>
-        <Button variant="contained" className={classes.button}>
-          Cancel
         </Button>
       </form>
     </Card>

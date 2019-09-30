@@ -1,7 +1,8 @@
 import neo4j from 'neo4j-driver';
 
 // v1.0.0 use hode coded driver, future version add login
-const driver = neo4j.driver('bolt://localhost:17687',
+// note: currently hard coded to website
+const driver = neo4j.driver('bolt://jacobmccrumb.com:17687',
     neo4j.auth.basic('neo4j', 'explain'));
 
 /**
@@ -96,13 +97,49 @@ const violationCheckExplains = (violationCheck) => {
   const cypher = `EXPLAIN ${violationCheckStart}
   ${violationCheck}`;
   const session = driver.session();
-  readTransactionAsync(session, cypher)
+  console.log('checking');
+  return readTransactionAsync(session, cypher)
     .then((resp) => {
+      console.log('good');
       return true;
     }).catch((err) => {
+      console.log('bad');
       return false;
-    }).finally(session.close);
+    }).finally(() => {console.log('finally!'); session.close();});
 };
+
+const savePerformanceCheck = async (check) => {
+  const cypher = `// only create check if doesn't exist with name
+  OPTIONAL MATCH (c:PerformanceCheck {name: $check.name})
+  WITH c WHERE c IS NULL
+  CREATE (realCheck:PerformanceCheck {name: $check.name})
+  SET realCheck += $check
+  RETURN realCheck`;
+  const session = driver.session();
+  try {
+    return await writeTransactionAsync(session, cypher, {check});
+  } catch (e) {
+    console.error('Error saving validation check', e);
+  } finally {
+    session.close();
+  }
+};
+
+const performanceCheckExists = async (name) => {
+  const cypher = 'MATCH (n:PerformanceCheck {name: $name}) RETURN n'
+  const session = driver.session();
+  try {
+    const resp = (await readTransactionAsync(session, cypher, {name}))
+    console.log(resp);
+    return !(resp == null || resp.records == null || resp.records.length === 0);
+  } catch (e) {
+    console.error('Error confirming performance check exists', e);
+    return true;
+  } finally {
+    session.close();
+  }
+};
+
 export default {
   getQueryCountsAsync,
   getLatestStatsAsync,
@@ -110,4 +147,6 @@ export default {
   safeInteger,
   violationCheckStart,
   violationCheckExplains,
+  savePerformanceCheck,
+  performanceCheckExists,
 };
