@@ -83,11 +83,13 @@ const getPotentialBottlnecks = async () => {
     WITH s, ex ORDER BY ex.createdOn DESC
     WITH s, head(collect(ex)) as latestExplain
     WHERE exists((latestExplain)-[:VIOLATES]->())
+    MATCH (s)<-[:LOGS]-(ql)
+	WITH s, latestExplain, sum(ql.queryTime) AS totalTime, count(ql) AS totalLogs, min(ql.queryTime) AS minTime, max(ql.queryTime) AS maxTime, avg(ql.queryTime) AS avgTime
     RETURN s {.*} AS statement, 
            size([(latestExplain)-[:VIOLATES]->(check) | check ]) AS violations, 
-           1 as avgTime, 
-           2 as maxTime,
-           0 AS minTime`;
+           avgTime, 
+           maxTime,
+           minTime`;
   const session = driver.session();
   try {
     return await readTransactionAsync(session, cypher);
