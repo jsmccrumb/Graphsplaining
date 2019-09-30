@@ -153,6 +153,28 @@ const setQueryExplainMeIfStaleAsync = async (query, logTime) => {
     session.close();
   }
 };
+
+const saveQueryLogAsync = async (queryLog) => {
+  const cypher = `// create the query and query log
+    MERGE (statement:Statement {queryId: $id})
+      ON CREATE SET statement.text = $queryLog.query,
+        statement:ExplainMe
+    CREATE (statement)<-[:LOGS]-(ql:QueryLog {createdOn: datetime({date: date($queryLog.date), time: time($queryLog.time)})})
+    // note... this will set a string date and string time prop
+    SET ql += $queryLog
+    WITH statement WHERE statement:Stale
+    SET statement:ExplainMe REMOVE statement:State`;
+  const id = queryId(queryLog.query);
+  const session = explainDriver.session();
+  try {
+    await writeTransactionAsync(session, cypher, {id, queryLog});
+  } catch (e) {
+    console.error('Unable to save query log entry', e);
+  } finally {
+    session.close();
+  }
+};
+
 module.exports = {
   removeComments,
   queryId,
@@ -160,4 +182,5 @@ module.exports = {
   setQueryExplainMeAsync,
   setQueryStaleAsync,
   setQueryExplainMeIfStaleAsync,
+  saveQueryLogAsync,
 };
