@@ -27,12 +27,15 @@ export default function MetricsGrid() {
   const classes = useStyles();
   const [queryCounts, setQueryCounts] = useState(null);
   const [latestStats, setLatestStats] = useState(null);
+  const [queryTimes, setQueryTimes] = useState(null);
   useEffect(() => {
     (async () => {
       const qcResults = await graphUtils.getQueryCountsAsync();
       qcResults != null && setQueryCounts(chartUtils.convertQueryCounts(qcResults));
       const lsResults = await graphUtils.getLatestStatsAsync();
       lsResults != null && setLatestStats(chartUtils.convertLatestStats(lsResults));
+      const qtResults = await graphUtils.getQueryTimesAsync();
+      qtResults != null && setQueryTimes(chartUtils.convertQueryTimes(qtResults));
     })();
   }, []);
 
@@ -46,7 +49,7 @@ export default function MetricsGrid() {
         </Grid>
         <Grid item xs={12} md={8} lg={6}>
           <Paper className={classes.paper}>
-            <HeatMap />
+            {queryTimes == null ? <Loading message="Loading Query times per Day" /> : <HeatMap options={queryTimes} />}
           </Paper>
         </Grid>
         <Grid item xs={6} md={4}>
@@ -54,11 +57,11 @@ export default function MetricsGrid() {
             {latestStats == null ? <Loading message="Loading Latest Stats per Statement" /> : <DonutChart options={latestStats} />}
           </Paper>
         </Grid>
-        <Grid item xs={12} md={8} lg={6}>
+        {/*<Grid item xs={12} md={8} lg={6}>
           <Paper className={classes.paper}>
             <StackedBarChart />
           </Paper>
-        </Grid>
+        </Grid>*/}
       </Grid>
     </div>
   );

@@ -1,10 +1,10 @@
 const graphUtils = require('./graph_utils');
 let explainSleep = 60000;
 let performanceCheckSleep = 60000;
-let indexSleep = 60000;
+const indexSleep = 60000;
 
 const checkIndexesAsync = async () => {
-  await graphUtils.checkMissingIndexesAsync ();
+  await graphUtils.checkMissingIndexesAsync();
   setTimeout(checkIndexesAsync, indexSleep);
 };
 

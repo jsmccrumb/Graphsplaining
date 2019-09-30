@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
@@ -7,6 +7,8 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
+import graphUtils from "./utils/graph_utils";
+import Loading from "./Loading";
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -19,26 +21,26 @@ const useStyles = makeStyles(theme => ({
   }
 }));
 
-function createData(label, property, timesRecommended) {
-  return { label, property, timesRecommended };
-}
-
-const rows = [
-  createData("Frozen yoghurt", 159, 6.0, 24, 4.0),
-  createData("Ice cream sandwich", 237, 9.0, 37, 4.3),
-  createData("Eclair", 262, 16.0, 24, 6.0),
-  createData("Cupcake", 305, 3.7, 67, 4.3),
-  createData("Gingerbread", 356, 16.0, 49, 3.9)
-];
-
 export default function SimpleTable() {
   const classes = useStyles();
+  const [rows, setRows] = useState(null);
+  useEffect(() => {
+    (async () => {
+      const indexes = await graphUtils.getIndexRecommendations();
+      if (indexes == null) {
+        setRows([]);
+      } else {
+        setRows(indexes);
+      }
+    })();
+  });
 
   return (
     <Paper className={classes.root}>
       <Typography variant="h5" component="h3">
         Potential Indexes
       </Typography>
+      {rows == null ? <Loading /> :
       <Table className={classes.table}>
         <TableHead>
           <TableRow>
@@ -49,7 +51,7 @@ export default function SimpleTable() {
         </TableHead>
         <TableBody>
           {rows.map(row => (
-            <TableRow key={row.laebl}>
+            <TableRow key={row.label}>
               <TableCell component="th" scope="row">
                 {row.label}
               </TableCell>
@@ -58,7 +60,7 @@ export default function SimpleTable() {
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+      </Table>}
     </Paper>
   );
 }

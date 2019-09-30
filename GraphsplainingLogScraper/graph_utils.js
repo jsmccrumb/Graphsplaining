@@ -159,9 +159,21 @@ const saveQueryLogAsync = async (queryLog) => {
     MERGE (statement:Statement {queryId: $id})
       ON CREATE SET statement.text = $queryLog.query,
         statement:ExplainMe
-    CREATE (statement)<-[:LOGS]-(ql:QueryLog {createdOn: datetime({date: date($queryLog.date), time: time($queryLog.time)})})
-    // note... this will set a string date and string time prop
-    SET ql += $queryLog
+    MERGE (statement)<-[:LOGS]-(ql:QueryLog {createdOn: datetime({date: date($queryLog.date), time: time($queryLog.time)})})
+    SET ql.logLevel = $queryLog.logLevel,
+      ql.queryTime = toInteger($queryLog.queryTime),
+      ql.planning = toInteger($queryLog.planning),
+      ql.waiting = toInteger($queryLog.waiting),
+      ql.cpu = toInteger($queryLog.cpu),
+      ql.pageHits = toInteger($queryLog.pageHits),
+      ql.pageFaults = toInteger($queryLog.pageFaults),
+      ql.protocol = $queryLog.protocol,
+      ql.user = $queryLog.user,
+      ql.driverVersion = $queryLog.driverVersion,
+      ql.itemAtIndexFour = $queryLog.itemAtIndexFour,
+      ql.clientIP = $queryLog.clientIP,
+      ql.server = $queryLog.server,
+      ql.query = $queryLog.query
     WITH statement WHERE statement:Stale
     SET statement:ExplainMe REMOVE statement:State`;
   const id = queryId(queryLog.query);

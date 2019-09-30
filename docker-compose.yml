@@ -36,7 +36,7 @@ services:
       - NEO4J_dbms_connector_http_listen__address=:27474
       - NEO4J_dbms_logs_debug_level=DEBUG
       - NEO4J_dbms_logs_query_enabled=true
-      - NEO4J_dbms_logs_query_threshold=100ms
+      - NEO4J_dbms_logs_query_threshold=10ms
       - NEO4J_dbms_logs_query_allocation__logging__enabled=true
       - NEO4J_dbms_logs_query_runtime__logging__enabled=true
       - NEO4J_dbms_logs_query_time__logging__enabled=true

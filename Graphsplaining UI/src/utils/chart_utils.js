@@ -9,7 +9,7 @@ const baseLineChartOptions = {
   dataLabels: {
     enabled: false
   },
-  colors: ["#FF1654", "#247BA0"],
+  colors: ["#FF1654", "#247BA0", "#00FBB6"],
   series: [
     {
       name: "Series A",
@@ -151,7 +151,78 @@ const convertLatestStats = ({records = []}) => {
   };
 }
 
+const baseHeatMapOptions = {
+  chart: {
+    height: 350,
+    type: 'heatmap',
+  },
+  colors: ["#008FFB"],
+  series: [
+    {
+      name: "Series 1",
+      data: [
+        {
+          x: "W1",
+          y: 22
+        },
+        {
+          x: "W2",
+          y: 29
+        },
+        {
+          x: "W3",
+          y: 13
+        },
+        {
+          x: "W4",
+          y: 32
+        }
+      ]
+    },
+    {
+      name: "Series 2",
+      data: [
+        {
+          x: "W1",
+          y: 43
+        },
+        {
+          x: "W2",
+          y: 43
+        },
+        {
+          x: "W3",
+          y: 43
+        },
+        {
+          x: "W4",
+          y: 43
+        }
+      ]
+    }
+  ]
+};
+
+const convertQueryTimes = ({records = []}) => {
+  const parsed = records.map(r => ({date: r.get('date'), category: r.get('category'), count: graphUtils.safeInteger(r.get('count'))}));
+  const dates = new Set(parsed.map(r => r.date).sort((a, b) => a < b ? 1 : a > b ? -1 : 0));
+  const categories = new Set(parsed.map(r => r.category));
+  const getCount = ({date, category}) => {
+    const record = parsed.filter(r => r.date === date && r.category === category)[0];
+    return record == null ? 0 : record.count;
+  };
+  const series = [...categories].map((cat) => {
+    return {
+      name: cat,
+      data: [...dates].map(d => ({x: d, y: getCount({date: d, category: cat})}))
+    };
+  }).sort((a,b) => a.name.length > b.name.length ? 1 : a.name.length < b.name.length ? -1 : 0);
+  return {...baseLineChartOptions, series};
+};
+
+
 export default {
   convertQueryCounts,
   convertLatestStats,
+  convertQueryTimes,
 };

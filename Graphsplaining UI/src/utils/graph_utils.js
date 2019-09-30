@@ -26,10 +26,40 @@ const writeTransactionAsync = async (session, query, params) => {
 };
 
 const safeInteger = (neo4jInt) => {
+  if (neo4jInt == null) return neo4jInt;
   if (neo4j.integer.inSafeRange(neo4jInt)) {
-    return neo4jInt.toNumber();
+    return neo4jInt.toNumber == null ? neo4jInt : neo4jInt.toNumber();
   } else {
     return neo4jInt.toString();
+  }
+};
+
+const getIndexRecommendations = async () => {
+  const cypher = `
+  MATCH (label)<-[:COULD_INDEX_LABEL]-(ex:Explain)-[:COULD_INDEX_PROPERTY]->(prop)
+  RETURN label.labelName AS label, prop.expression AS expression`;
+  const session = driver.session();
+  try {
+    const {records} = await readTransactionAsync(session, cypher);
+    return Object.entries(records.map(r => ({label: r.get('label'), property: r.get('expression').split(/[. <>=]/)[1]}))
+        .reduce((acc, r) => {
+          if (acc[r.label]) {
+            if (acc[r.label][r.property]) {
+              acc[r.label][r.property]++;
+            } else {
+              acc[r.label][r.property] = 1;
+            }
+          } else {
+            acc[r.label] = {[r.property]: 1};
+          }
+          return acc;
+        }, {})).map(([label, obj]) => {
+          return Object.entries(obj).map(([property, timesRecommended]) => ({label, property, timesRecommended}));
+        }).reduce((acc, curr) => ([...acc, ...curr]), []);
+  } catch (e) {
+    console.error('Error getting potential indexes');
+  } finally {
+    session.close();
   }
 };
 
@@ -85,7 +115,7 @@ const getPotentialBottlnecks = async () => {
     WHERE exists((latestExplain)-[:VIOLATES]->())
     OPTIONAL MATCH (s)<-[:LOGS]-(ql)
 	WITH s, latestExplain, sum(ql.queryTime) AS totalTime, count(ql) AS totalLogs, min(ql.queryTime) AS minTime, max(ql.queryTime) AS maxTime, avg(ql.queryTime) AS avgTime
-    RETURN s {.*} AS statement, 
+    RETURN s.text AS statement, 
            size([(latestExplain)-[:VIOLATES]->(check) | check ]) AS violations, 
            avgTime, 
            maxTime,
@@ -164,6 +194,29 @@ const performanceCheckExists = async (name) => {
   }
 };
 
+const getQueryTimesAsync = async () => {
+  const cypher = `
+  MATCH (ql:QueryLog)
+  WITH CASE
+    WHEN ql.queryTime < 100 THEN '< 100ms'
+    WHEN ql.queryTime < 300 THEN '< 300ms'
+    WHEN ql.queryTime < 1000 THEN '< 1000ms'
+    WHEN ql.queryTime < 3000 THEN '< 3000ms'
+    WHEN ql.queryTime < 10000 THEN '< 10 sec'
+    WHEN ql.queryTime < 60000 THEN '< 1 min'
+    ELSE '> 1 min'
+  END AS category, date(ql.createdOn) AS date, count(*) AS count
+  RETURN category, date, count`;
+  const session = driver.session();
+  try {
+    return await readTransactionAsync(session, cypher);
+  } catch (e) {
+    console.error('Error getting query times', e);
+  } finally {
+    session.close();
+  }
+};
+
 export default {
   getQueryCountsAsync,
   getLatestStatsAsync,
@@ -173,4 +226,7 @@ export default {
   violationCheckExplains,
   savePerformanceCheck,
   performanceCheckExists,
+  getPotentialBottlnecks,
+  getIndexRecommendations,
+  getQueryTimesAsync,
 };

@@ -428,7 +428,7 @@ const removeExplainMeAsync = async (id) => {
   const session = explainDriver.session();
   try {
     return await writeTransactionAsync(session, cypher, {id});
-  } catch (e) { 
+  } catch (e) {
     console.error('Unable to remove explain me');
   } finally {
     session.close();
