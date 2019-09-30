@@ -1,8 +1,14 @@
 # Graphsplaining
 
+Graphsplain is your all-in-one solution to optimizing your graph. By evaluating your current graph and queries, Graphsplain will 'splain ways to help make your graph faster, stronger, and graphier.
+
+## So what does it do?
+
 Graphsplaining is a full-stack performance monitoring and tuning tool for Neo4j. It comes with its own graph for saving insights about querys, so that it does not clutter whatever graph you point it at, and will pull in data from the debug log and, if available, the query log (enterprise only). It automatically runs EXPLAIN against queries found in the logs, and saves the result to its own graph for further analysis.
 
 See Neo4j documentation: [Query Tuning](https://neo4j.com/docs/cypher-manual/current/query-tuning/) and [Execution Plans](https://neo4j.com/docs/cypher-manual/current/execution-plans/)
+
+See it live: [Graphsplaining](http://jacobmccrumb.com:3000) and run some queries against a graph at: [Graph](http://jacobmccrumb.com:27474) using login: guest///explain (queries will be Graphsplained and appear in the first link).
 
 ## Getting Started
 Currently uses Docker (and docker-compose) to manage the service and it's graph.
