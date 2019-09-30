@@ -77,6 +77,28 @@ const getLatestStatsAsync = async () => {
   }
 };
 
+const getPotentialBottlnecks = async () => {
+  const cypher = `// get potential bottlenecks
+    MATCH (s:Statement)<-[:EXPLAINS]-(ex)
+    WITH s, ex ORDER BY ex.createdOn DESC
+    WITH s, head(collect(ex)) as latestExplain
+    WHERE exists((latestExplain)-[:VIOLATES]->())
+    RETURN s {.*} AS statement, 
+           size([(latestExplain)-[:VIOLATES]->(check) | check ]) AS violations, 
+           1 as avgTime, 
+           2 as maxTime,
+           0 AS minTime`;
+  const session = driver.session();
+  try {
+    return await readTransactionAsync(session, cypher);
+  } catch (e) {
+    console.error('Error getting potential bottlenecks', e);
+    return Promise.resolve(null);
+  } finally {
+    session.close();
+  }
+};
+
 const getPerformanceChecksAsync = async () => {
   const cypher = `// get all current performance checks
     MATCH (n:PerformanceCheck)
