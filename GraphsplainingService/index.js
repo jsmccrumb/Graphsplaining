@@ -1,13 +1,19 @@
 const graphUtils = require('./graph_utils');
 let explainSleep = 60000;
 let performanceCheckSleep = 60000;
+let indexSleep = 60000;
+
+const checkIndexesAsync = async () => {
+  await graphUtils.checkMissingIndexesAsync ();
+  setTimeout(checkIndexesAsync, indexSleep);
+};
 
 const runExplainsAsync = async (queries) => {
   console.log('run queries', queries.length);
   for (let i = 0; i < queries.length; i++) {
     const query = queries[i];
     try {
-      const result = await graphUtils.runExplainAsync(query.text);
+      const result = await graphUtils.runExplainAsync(query.text, query.queryId);
       await graphUtils.saveExplainAsync(result, query.queryId);
     } catch (e) {
       console.error(`ERROR: Could not explain and save ${query.queryId}`);
@@ -66,6 +72,7 @@ graphUtils.testConnectionsAsync().then(async ({main, explain}) => {
     await graphUtils.initPerformanceChecksAsync();
     graphsplainingAsync();
     performanceCheckingAsync();
+    checkIndexesAsync();
   } else {
     console.error('Graph connections are not ready, check env and graphs');
     process.exitCode = 1;

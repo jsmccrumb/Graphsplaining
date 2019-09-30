@@ -63,7 +63,7 @@ const getLatestStatsAsync = async () => {
     WITH s, ex ORDER BY ex.createdOn DESC
     WITH s, head(collect(ex)) as latestExplain
     WITH exists((latestExplain)-[:VIOLATES]->()) AS hasViolation,
-         exists((latestExplain)-[:COULD_INDEX]->()) AS hasIndex,
+         exists((latestExplain)-[:COULD_INDEX_PROPERTY]->()) AS hasIndex,
          count(*) AS count
     RETURN hasViolation, hasIndex, count`;
   const session = driver.session();

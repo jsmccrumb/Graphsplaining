@@ -19,7 +19,7 @@ services:
   # graph used for running explains against -- update environment variables on graphsplaining_service to use another
   neo4j_test:
     restart: on-failure
-    image: neo4j:3.5.9 #-enterprise # enterprise requires a license for commercial use but perhaps ok for dev work
+    image: neo4j:3.5.9-enterprise # enterprise requires a license for commercial use but perhaps ok for dev work
     # if you sign up with neo4j as a developer: https://neo4j.com/download/
     # use non-standard ports for neo4j to prevent port conflicts
     ports:

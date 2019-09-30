@@ -117,9 +117,17 @@ const transformQueryToExplain = query => {
  * @param {string} query Query that needs explaining
  * @return {neo4j.statementResult} result of explain
  */
-const runExplainAsync = async query => {
+const runExplainAsync = async (query, queryId) => {
   query = transformQueryToExplain(query);
-  return await readTransactionAsync(mainDriver.session(), query);
+  const session = mainDriver.session();
+  try {
+    return await readTransactionAsync(session, query);
+  } catch (e) {
+    console.error('Unexplainable query found', e);
+    removeExplainMeAsync(queryId);
+  } finally {
+    session.close();
+  }
 };
 
 const getCypherForSaveExplain = ({summary}, queryId) => {
@@ -210,7 +218,7 @@ const getCypherForSaveExplain = ({summary}, queryId) => {
     MATCH (q:Statement {queryId: $queryId})
     REMOVE q:ExplainMe
     WITH q
-    CREATE (e:Explain:CheckMe {
+    CREATE (e:Explain:CheckMe:CheckMissingIndex {
       statementType: $explain.statementType,
       serverAddress: $explain.serverAddress,
       serverVersion: $explain.serverVersion,
@@ -339,6 +347,31 @@ const getPerformanceChecksAsync = async () => {
   }
 };
 
+const checkMissingIndexesAsync = async () => {
+  const cypher = `
+    MATCH (ex:CheckMissingIndex)
+    WITH ex LIMIT 30
+    REMOVE ex:CheckMissingIndex
+    WITH ex
+    MATCH (ex)<-[:ENDS]-()-[:HAS_CHILD]->(fp {operatorType: 'Filter'})-[:HAS_CHILD*1..3]->(ns)
+    WHERE fp.expression CONTAINS '.' AND ns.operatorType IN ['NodeByLabelScan', 'AllNodesScan']
+    MERGE (ex)-[:COULD_INDEX_PROPERTY]->(fp)
+    WITH ex, ns
+    WHERE ns.operatorType = 'NodeByLabelScan'
+    MERGE (ex)-[:COULD_INDEX_LABEL]->(ns)`;
+  const session = explainDriver.session();
+  let resp = null;
+  try {
+    do {
+      resp = await writeTransactionAsync(session, cypher);
+    } while (resp.summary.counters.labelsRemoved() > 0);
+  } catch (e) {
+    console.error('Error checking for missing indexes', e);
+  } finally {
+    session.close();
+  }
+};
+
 const runPerformanceChecksAsync = async ({queryId, createdOn}) => {
   const checks = await getPerformanceChecksAsync();
   const cypherBegin = `// for checking a rule violation, first find the query and explain to check
@@ -389,6 +422,19 @@ const getExplainsToCheckAsync = async () => {
   }
 };
 
+const removeExplainMeAsync = async (id) => {
+  const cypher = `MATCH (s:Statement {queryId: $id})
+    REMOVE s:ExplainMe SET s:Unexplainable`;
+  const session = explainDriver.session();
+  try {
+    return await writeTransactionAsync(session, cypher, {id});
+  } catch (e) { 
+    console.error('Unable to remove explain me');
+  } finally {
+    session.close();
+  }
+};
+
 module.exports = {
   removeComments,
   queryId,
@@ -401,4 +447,5 @@ module.exports = {
   initPerformanceChecksAsync,
   getExplainsToCheckAsync,
   runPerformanceChecksAsync,
+  checkMissingIndexesAsync,
 };
