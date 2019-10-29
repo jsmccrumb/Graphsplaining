@@ -8,7 +8,7 @@ Graphsplaining is a full-stack performance monitoring and tuning tool for Neo4j.
 
 See Neo4j documentation: [Query Tuning](https://neo4j.com/docs/cypher-manual/current/query-tuning/) and [Execution Plans](https://neo4j.com/docs/cypher-manual/current/execution-plans/)
 
-See it live: [Graphsplaining](https://jacobmccrumb.com/Graphsplaining) and run some queries against a graph at: [Graph](http://jacobmccrumb.com:27474) using login: guest///explain (queries will be Graphsplained and appear in the first link).
+See it live: [Graphsplaining](https://jacobmccrumb.com/Graphsplaining) and run some queries against a graph at: [Graph](https://jacobmccrumb.com:27473) using login: guest///explain (queries will be Graphsplained and appear in the first link).
 
 ## Getting Started
 Currently uses Docker (and docker-compose) to manage the service and it's graph.
